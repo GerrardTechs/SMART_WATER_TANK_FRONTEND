@@ -82,9 +82,10 @@ export default {
     const loading = ref(false)
     const error = ref(null)
     const router = useRouter()
-    let refreshInterval = null // simpan ID interval supaya bisa dibersihkan nanti
+    let intervalId = null
 
     const fetchTanks = async () => {
+      error.value = null
       try {
         const user = JSON.parse(localStorage.getItem('user'))
         const token = localStorage.getItem('token')
@@ -124,16 +125,12 @@ export default {
     onMounted(() => {
       loading.value = true
       fetchTanks()
-
-      // 🕑 Auto-refresh setiap 2 detik
-      refreshInterval = setInterval(() => {
-        fetchTanks()
-      }, 2000)
+      // 🔁 interval setiap 2 detik untuk auto-refresh data tangki
+      intervalId = setInterval(fetchTanks, 2000)
     })
 
     onUnmounted(() => {
-      // 🧹 Bersihkan interval saat halaman ditinggalkan
-      if (refreshInterval) clearInterval(refreshInterval)
+      if (intervalId) clearInterval(intervalId)
     })
 
     return {
@@ -168,6 +165,7 @@ export default {
   overflow: hidden;
   margin: auto;
 }
+
 .water {
   position: absolute;
   bottom: 0;
