@@ -9,7 +9,7 @@ const loading = ref(false) // Loading state
 const error = ref(null) // Error state
 
 // Base URL backend
-const API_BASE = 'http://localhost:3000/api' // ganti sesuai backend-mu
+const API_BASE = 'http://localhost:5000/api' // ganti sesuai backend-mu
 
 // Ambil semua water tanks
 async function fetchDevices() {

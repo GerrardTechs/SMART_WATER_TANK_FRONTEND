@@ -67,7 +67,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-// import mqttjs from 'mqtt' // 🔒 siap dipakai nanti
+// import mqttjs from 'mqtt' // siap dipakai nanti kalau mau live update
 
 const route = useRoute()
 const deviceId = route.params.deviceId

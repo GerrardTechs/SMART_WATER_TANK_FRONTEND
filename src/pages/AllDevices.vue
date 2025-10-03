@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md bg-primary">
+  <q-page class="q-pa-md bg-animated">
     <!-- Header -->
     <q-card class="q-pa-md no-shadow q-mb-md header-card" bordered>
       <p class="text-h5 text-weight-bold text-primary">All Devices</p>
@@ -21,7 +21,11 @@
 
     <!-- Tanks Grid -->
     <div v-else class="row q-gutter-md justify-center">
-      <q-card v-for="tank in tanks" :key="tank.id" class="tank-container no-shadow q-pa-sm col-5">
+      <q-card
+        v-for="tank in tanks"
+        :key="tank.water_tank_id"
+        class="tank-container no-shadow q-pa-sm col-5 animated-card"
+      >
         <div class="tank">
           <div
             class="water"
@@ -29,17 +33,20 @@
               height: (tank.water_level || 0) + '%',
               backgroundColor: getTankWaterColor(tank.water_level || 0),
             }"
-          ></div>
+          >
+            <!-- animasi wave -->
+            <div class="water-wave"></div>
+          </div>
         </div>
         <q-card-section>
           <div class="text-center text-weight-bold water-level-text">
-            {{ tank.tank_name || 'Water Tank ' + tank.id }}
+            {{ tank.tank_name }}
           </div>
           <div class="text-center text-weight-bold water-level-text">
             Water Level - {{ tank.water_level || 0 }}%
           </div>
           <div class="text-caption text-grey-7 q-mt-xs">
-            Last update: {{ formatDate(tank.created_at) }}
+            Last update: {{ formatDate(tank.created_at) || '—' }}
           </div>
         </q-card-section>
         <div class="text-center q-mt-sm">
@@ -50,7 +57,7 @@
             icon="info"
             color="primary"
             label="Detail"
-            @click="goToDeviceDetail(tank.id)"
+            @click="goToDeviceDetail(tank.water_tank_id)"
           />
         </div>
       </q-card>
@@ -65,7 +72,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -75,15 +82,20 @@ export default {
     const loading = ref(false)
     const error = ref(null)
     const router = useRouter()
+    let refreshInterval = null // simpan ID interval supaya bisa dibersihkan nanti
 
     const fetchTanks = async () => {
-      loading.value = true
-      error.value = null
       try {
         const user = JSON.parse(localStorage.getItem('user'))
-        if (!user) throw new Error('User not logged in')
+        const token = localStorage.getItem('token')
+        if (!user || !token) throw new Error('User not logged in')
 
-        const response = await axios.get(`http://localhost:5000/api/water-tanks?user_id=${user.id}`)
+        const response = await axios.get(
+          `http://localhost:5000/api/water-tanks?user_id=${user.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
         tanks.value = response.data
       } catch (err) {
         console.error('Error fetching tanks:', err)
@@ -106,11 +118,22 @@ export default {
     }
 
     const goToDeviceDetail = (tankId) => {
-      router.push({ name: 'DeviceDetail', params: { deviceId: String(tankId) } })
+      router.push(`/home/device-detail/${tankId}`)
     }
 
     onMounted(() => {
+      loading.value = true
       fetchTanks()
+
+      // 🕑 Auto-refresh setiap 2 detik
+      refreshInterval = setInterval(() => {
+        fetchTanks()
+      }, 2000)
+    })
+
+    onUnmounted(() => {
+      // 🧹 Bersihkan interval saat halaman ditinggalkan
+      if (refreshInterval) clearInterval(refreshInterval)
     })
 
     return {
@@ -127,9 +150,6 @@ export default {
 </script>
 
 <style scoped>
-.bg-primary {
-  background-color: #0d47a1 !important;
-}
 .header-card {
   border-radius: 20px;
 }
@@ -153,6 +173,48 @@ export default {
   bottom: 0;
   width: 100%;
   transition: height 0.5s ease-in-out;
+  overflow: hidden;
+}
+.water-wave {
+  position: absolute;
+  bottom: 0;
+  width: 200%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  animation: wave 4s infinite linear;
+}
+@keyframes wave {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-25%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+.bg-animated {
+  background: linear-gradient(-45deg, #1e3c72, #2a5298, #1e3c72, #000428);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.animated-card {
+  transition: transform 0.3s ease;
+}
+.animated-card:hover {
+  transform: translateY(-5px);
 }
 .water-level-text {
   color: #0c0d11;
